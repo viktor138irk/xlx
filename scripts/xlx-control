@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ENV_FILE="${ENV_FILE:-/etc/xlx/xlxd.env}"
+if [[ -f "$ENV_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+fi
+
+XLX_INSTALL_PATH="${XLX_INSTALL_PATH:-/xlxd}"
+XLX_LOG_PATH="${XLX_LOG_PATH:-/var/log/xlxd.log}"
+XLX_MODULES="${XLX_MODULES:-ABCDEFGHIJKLMNOPQRSTUVWXYZ}"
+PID_FILE="/var/run/xlxd.pid"
+
+usage() {
+  echo "Usage: xlx-control {start|stop|restart|status|render-modules}"
+}
+
+render_modules() {
+  mkdir -p "$XLX_INSTALL_PATH"
+  local module_file="$XLX_INSTALL_PATH/xlxd.module"
+  : > "$module_file"
+  local i char
+  for ((i = 0; i < ${#XLX_MODULES}; i++)); do
+    char="${XLX_MODULES:$i:1}"
+    printf "%s\n" "$char" >> "$module_file"
+  done
+}
+
+start() {
+  render_modules
+  if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+    echo "xlxd already running with pid $(cat "$PID_FILE")"
+    exit 0
+  fi
+
+  mkdir -p "$(dirname "$XLX_LOG_PATH")"
+  cd "$XLX_INSTALL_PATH"
+  ./xlxd -d -p "$PID_FILE" >> "$XLX_LOG_PATH" 2>&1
+}
+
+stop() {
+  if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+    kill "$(cat "$PID_FILE")"
+    rm -f "$PID_FILE"
+    return
+  fi
+
+  pkill -f "$XLX_INSTALL_PATH/xlxd" || true
+  rm -f "$PID_FILE"
+}
+
+status() {
+  if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+    echo "xlxd is running with pid $(cat "$PID_FILE")"
+    exit 0
+  fi
+  echo "xlxd is not running"
+  exit 3
+}
+
+case "${1:-}" in
+  start) start ;;
+  stop) stop ;;
+  restart) stop; start ;;
+  status) status ;;
+  render-modules) render_modules ;;
+  *) usage; exit 2 ;;
+esac

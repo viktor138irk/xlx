@@ -1,60 +1,145 @@
 # XLX Server
 
-Собственный XLX/DMR-сервер для пользователей Pi-Star с платной регистрацией, автоматической выдачей ID, проверкой позывного по внешней базе и персональным доступом по логину/паролю.
+Собственный XLX/DMR-сервер для пользователей Pi-Star.
 
-## Цель проекта
+## Что уже есть
 
-Сделать управляемую платформу для DMR-пользователей:
+- платная регистрация;
+- проверка позывного по внутренней базе зарегистрированных пользователей;
+- YooKassa;
+- ручной перевод с подтверждением по чеку;
+- автоматическая выдача внутреннего DMR ID;
+- отдельный DMR-пароль для Pi-Star;
+- установка и управление `xlxd`;
+- главный пользовательский дашборд `/`;
+- админка настроек `xlxd` `/admin`;
+- экспорт активных пользователей для будущего access gateway.
 
-- регистрация пользователя по позывному;
-- автоматическая проверка позывного;
-- платная активация аккаунта;
-- автоматическая выдача внутреннего XLX/DMR ID;
-- генерация данных подключения для Pi-Star;
-- управление доступом к XLX-серверу;
-- админ-панель пользователей, оплат, ID, логов и подключений;
-- автообновление сервера и веб-панели.
+## Компоненты
 
-## Базовая архитектура
+- `xlxd` - мультипротокольный XLX reflector.
+- `public/index.php` - PHP API и web routes.
+- `public/assets` - стили и JS дашбордов.
+- `src/Domain` - регистрация, проверка дублей позывного, оплата, выдача ID, настройки XLX.
+- `database/schema.sql` - схема MariaDB/MySQL.
+- `scripts/install-xlxd.sh` - установка и сборка `xlxd`.
+- `scripts/xlx-control` - start/stop/status для systemd.
 
-Проект делится на несколько частей:
+## Быстрый старт XLX
 
-1. **XLX Core** — установленный и управляемый XLX reflector.
-2. **Access Gateway** — слой контроля доступа пользователей, паролей и разрешённых подключений.
-3. **Web Panel** — личный кабинет и админка.
-4. **Billing** — платная регистрация и продление доступа.
-5. **Callsign Verifier** — проверка позывных по базе радиолюбителей.
-6. **ID Allocator** — автоматическая выдача уникального ID.
-7. **Installer/Updater** — установка, обновления, бэкапы и восстановление.
+Для полной установки панели, базы, YooKassa-заготовки и самого `xlxd` используй общий установщик.
+
+### Установка без домена
+
+```bash
+sudo apt update
+sudo apt install -y git
+git clone https://github.com/viktor138irk/xlx.git
+cd xlx
+sudo bash scripts/install-system.sh
+```
+
+Установщик сам выберет адрес сервера:
+
+1. `XLX_PUBLIC_HOST`, если переменная задана;
+2. `hostname -f`;
+3. первый IP из `hostname -I`;
+4. `127.0.0.1`, если ничего не найдено.
+
+В конце установки будут показаны:
+
+- адрес сайта;
+- адрес админки;
+- admin token;
+- webhook URL для YooKassa;
+- логин и пароль БД.
+
+### Установка с доменом
+
+```bash
+sudo apt update
+sudo apt install -y git
+git clone https://github.com/viktor138irk/xlx.git
+cd xlx
+sudo XLX_PUBLIC_HOST=xlx.example.ru bash scripts/install-system.sh
+```
+
+Если домен появится позже, его можно поменять в админке `/admin`.
+
+### Установка с YooKassa
+
+```bash
+sudo \
+  XLX_PUBLIC_HOST=xlx.example.ru \
+  YOOKASSA_SHOP_ID=123456 \
+  YOOKASSA_SECRET_KEY=secret_key \
+  bash scripts/install-system.sh
+```
+
+Webhook для YooKassa установщик выведет в конце. Он выглядит так:
+
+```text
+http://адрес-сервера/api/webhooks/yookassa?token=секрет
+```
+
+Если сервер работает через HTTPS:
+
+```bash
+sudo \
+  XLX_PUBLIC_SCHEME=https \
+  XLX_PUBLIC_HOST=xlx.example.ru \
+  YOOKASSA_SHOP_ID=123456 \
+  YOOKASSA_SECRET_KEY=secret_key \
+  bash scripts/install-system.sh
+```
+
+### После установки
+
+Открой:
+
+- `/` - главная страница и регистрация пользователей;
+- `/admin` - админка настроек `xlxd`;
+- `/api/health` - проверка API.
+
+Для Pi-Star нужен UDP порт `62030`. Также обычно открывают:
+
+```bash
+sudo bash scripts/firewall-ufw.sh
+```
+
+### Управление XLX
+
+```bash
+sudo systemctl start xlxd
+sudo systemctl stop xlxd
+sudo systemctl restart xlxd
+sudo systemctl status xlxd
+sudo tail -f /var/log/xlxd.log
+```
+
+### Только установка reflector
+
+Если нужна только сборка и запуск `xlxd` без полной панели:
+
+```bash
+git clone https://github.com/viktor138irk/xlx.git
+cd xlx
+sudo mkdir -p /etc/xlx
+sudo cp config/xlxd.env.example /etc/xlx/xlxd.env
+sudo nano /etc/xlx/xlxd.env
+sudo bash scripts/install-xlxd.sh
+sudo systemctl start xlxd
+```
+
+## Документация
+
+- `docs/INSTALL_SYSTEM.md` - установка всей системы без привязки к домену или IP.
+- `docs/INSTALL_XLXD.md` - установка reflector.
+- `docs/PAYMENTS_AND_REGISTRATION.md` - регистрация, YooKassa и чеки.
+- `docs/ADMIN_DASHBOARD.md` - главная и админка.
 
 ## Статус
 
-v0.1.0 — проектирование и стартовый каркас.
+v0.2.0-dev.
 
-## Предполагаемый стек
-
-- Ubuntu 22.04/24.04 LTS;
-- XLX reflector;
-- PHP 8.3 или Python/FastAPI для панели/API;
-- MariaDB/MySQL;
-- Nginx;
-- systemd services;
-- YooKassa/ЮMoney/ручное подтверждение оплаты на первом этапе;
-- автоустановщик shell + миграции БД.
-
-## Pi-Star сценарий
-
-Пользователь после оплаты получает:
-
-- адрес сервера;
-- порт;
-- логин/позывной;
-- пароль;
-- назначенный ID;
-- инструкцию подключения Pi-Star.
-
-## Версионирование
-
-- малые фиксы: `+0.0.1`;
-- заметные функции: `+0.1.0`;
-- архитектурные изменения: `+1.0.0`.
+Следующий шаг - UDP access gateway для жесткой проверки оплаченного доступа перед `xlxd`.

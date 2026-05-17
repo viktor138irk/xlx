@@ -1,0 +1,17 @@
+[Unit]
+Description=XLX Multiprotocol Reflector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+EnvironmentFile=/etc/xlx/xlxd.env
+ExecStart=/usr/local/sbin/xlx-control start
+ExecStop=/usr/local/sbin/xlx-control stop
+ExecReload=/usr/local/sbin/xlx-control restart
+PIDFile=/var/run/xlxd.pid
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
