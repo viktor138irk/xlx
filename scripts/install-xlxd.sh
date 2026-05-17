@@ -56,6 +56,9 @@ install -m 0644 "$REPO_ROOT/deploy/systemd/xlxd.service" "/etc/systemd/system/${
 if getent group www-data >/dev/null 2>&1; then
   chgrp www-data "$XLX_INSTALL_PATH" || true
   chmod 775 "$XLX_INSTALL_PATH" || true
+  touch "${XLX_LOG_PATH:-/var/log/xlxd.log}" || true
+  chgrp www-data "${XLX_LOG_PATH:-/var/log/xlxd.log}" || true
+  chmod 664 "${XLX_LOG_PATH:-/var/log/xlxd.log}" || true
   for file in xlxd.blacklist xlxd.whitelist xlxd.interlink xlxd.terminal; do
     if [[ -f "$XLX_INSTALL_PATH/$file" ]]; then
       chgrp www-data "$XLX_INSTALL_PATH/$file" || true

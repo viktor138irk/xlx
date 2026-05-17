@@ -8,6 +8,7 @@ use Xlx\Domain\IdAllocator;
 use Xlx\Domain\PaymentService;
 use Xlx\Domain\RegistrationService;
 use Xlx\Domain\XlxdConfigFileService;
+use Xlx\Domain\XlxdRuntimeService;
 use Xlx\Domain\XlxdSettingsService;
 use Xlx\Domain\YooKassaClient;
 use Xlx\Support\Database;
@@ -34,6 +35,10 @@ try {
 
     if ($method === 'GET' && $path === '/api/health') {
         Response::json(['ok' => true, 'service' => 'xlx-panel']);
+    }
+
+    if ($method === 'GET' && $path === '/api/dashboard/stats') {
+        Response::json(['ok' => true, 'data' => (new XlxdRuntimeService($config))->dashboard($pdo)]);
     }
 
     if ($method === 'GET' && $path === '/api/callsigns/check') {
@@ -128,6 +133,17 @@ try {
         $input = Input::json();
         $service = new XlxdConfigFileService($config);
         Response::json(['ok' => true, 'data' => $service->save((string) ($input['file'] ?? ''), (string) ($input['content'] ?? ''))]);
+    }
+
+    if ($method === 'GET' && $path === '/api/admin/xlxd/runtime') {
+        Security::requireAdminToken($config);
+        Response::json(['ok' => true, 'data' => (new XlxdRuntimeService($config))->dashboard($pdo)]);
+    }
+
+    if ($method === 'POST' && $path === '/api/admin/xlxd/runtime') {
+        Security::requireAdminToken($config);
+        $input = Input::json();
+        Response::json(['ok' => true, 'data' => (new XlxdRuntimeService($config))->control((string) ($input['action'] ?? ''))]);
     }
 
     Response::error('Route not found.', 404);

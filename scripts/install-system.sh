@@ -97,6 +97,7 @@ REFLECTOR_NAME="${XLX_REFLECTOR_NAME:-XLX000}"
 SYSOP_CALLSIGN="${XLX_SYSOP_CALLSIGN:-N0CALL}"
 SYSOP_EMAIL="${XLX_SYSOP_EMAIL:-admin@${PUBLIC_HOST%%:*}}"
 COUNTRY="${XLX_COUNTRY:-RU}"
+SERVICE_NAME="${XLX_SERVICE_NAME:-xlxd}"
 DB_NAME="${XLX_DB_NAME:-xlx_server}"
 DB_USER="${XLX_DB_USER:-xlx_user}"
 DB_PASSWORD="${XLX_DB_PASSWORD:-$(random_token 32)}"
@@ -183,7 +184,7 @@ XLX_MODULES=ABCDEFGHIJKLMNOPQRSTUVWXYZ
 XLX_INSTALL_PATH=/xlxd
 XLX_SOURCE_PATH=/usr/src/xlxd
 XLX_LOG_PATH=/var/log/xlxd.log
-XLX_SERVICE_NAME=xlxd
+XLX_SERVICE_NAME=${SERVICE_NAME}
 XLX_REPO_URL=https://github.com/LX3JL/xlxd.git
 EOF
 
@@ -195,6 +196,16 @@ sed \
   -e "s#__PUBLIC_DIR__#${PUBLIC_DIR}#g" \
   -e "s#__PANEL_PORT__#${PANEL_PORT}#g" \
   "$REPO_ROOT/deploy/apache/xlx-panel.conf" > /etc/apache2/sites-available/xlx-panel.conf
+
+SYSTEMCTL_PATH="$(command -v systemctl)"
+cat > /etc/sudoers.d/xlx-panel <<EOF
+www-data ALL=(root) NOPASSWD: ${SYSTEMCTL_PATH} start ${SERVICE_NAME}
+www-data ALL=(root) NOPASSWD: ${SYSTEMCTL_PATH} stop ${SERVICE_NAME}
+www-data ALL=(root) NOPASSWD: ${SYSTEMCTL_PATH} restart ${SERVICE_NAME}
+www-data ALL=(root) NOPASSWD: ${SYSTEMCTL_PATH} status ${SERVICE_NAME} --no-pager
+EOF
+chmod 440 /etc/sudoers.d/xlx-panel
+
 a2dissite 000-default.conf >/dev/null 2>&1 || true
 a2ensite xlx-panel.conf
 systemctl restart apache2

@@ -11,7 +11,7 @@
     <section class="hero">
         <div>
             <p class="eyebrow">XLX / DMR / Pi-Star</p>
-            <h1>Личный доступ к DMR-серверу без ручной настройки</h1>
+            <h1>DMR-рефлектор с личным доступом</h1>
             <p class="lead">Регистрация по позывному без дублей, оплата через YooKassa или чек перевода, автоматический DMR ID и пароль для Pi-Star.</p>
             <div class="actions">
                 <a class="button" href="#register">Подключиться</a>
@@ -31,6 +31,26 @@
                 <span>Оплата</span>
                 <strong>YooKassa</strong>
             </div>
+        </div>
+    </section>
+
+    <section class="panel dashboard-panel">
+        <div class="config-editor-head">
+            <div>
+                <p class="eyebrow">Статистика</p>
+                <h2>Последние вызовы и события</h2>
+                <p class="muted-text">Сводка строится по локальной базе и последним строкам `/var/log/xlxd.log`.</p>
+            </div>
+            <button class="button ghost" id="refreshStats" type="button">Обновить</button>
+        </div>
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card"><span>Сервис</span><strong>...</strong></div>
+            <div class="stat-card"><span>Активные</span><strong>...</strong></div>
+            <div class="stat-card"><span>Пользователи</span><strong>...</strong></div>
+            <div class="stat-card"><span>Ожидают оплату</span><strong>...</strong></div>
+        </div>
+        <div class="event-list" id="eventList">
+            <div class="event-row muted-text">Загружаем последние события...</div>
         </div>
     </section>
 
@@ -56,7 +76,7 @@
         <div>
             <p class="eyebrow">Регистрация</p>
             <h2>Создать заявку</h2>
-            <p>После отправки появится ссылка YooKassa и инструкция для оплаты переводом.</p>
+            <p class="muted-text">После отправки появится ссылка YooKassa и инструкция для оплаты переводом.</p>
         </div>
         <form class="form" id="registerForm">
             <label>Позывной

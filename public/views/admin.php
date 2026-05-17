@@ -11,8 +11,8 @@
     <section class="hero compact">
         <div>
             <p class="eyebrow">Админка</p>
-            <h1>Настройка XLX без ручного редактирования конфигов</h1>
-            <p class="lead">Меняй имя reflector, домен, порты, модули и пути. Настройки сохраняются в БД и могут сразу применяться в `/etc/xlx/xlxd.env`.</p>
+            <h1>Полная настройка XLX reflector</h1>
+            <p class="lead">Настраивай параметры `xlxd`, управляй сервисом, редактируй blacklist, whitelist, interlink и terminal без ручного SSH-редактирования.</p>
         </div>
     </section>
 
@@ -23,8 +23,32 @@
         <div class="actions">
             <button class="button" id="loadSettings">Загрузить настройки</button>
             <button class="button ghost" id="saveSettings">Сохранить</button>
-            <button class="button ghost" id="applySettings">Сохранить и применить</button>
+            <button class="button ghost" id="applySettings">Сохранить и применить env</button>
         </div>
+    </section>
+
+    <section class="panel service-control">
+        <div class="config-editor-head">
+            <div>
+                <p class="eyebrow">Управление reflector</p>
+                <h2>Статус и перезапуск `xlxd`</h2>
+                <p class="muted-text">После изменения env или файлов XLX можно перезапустить сервис прямо отсюда.</p>
+            </div>
+            <button class="button ghost" id="loadRuntime" type="button">Обновить статус</button>
+        </div>
+        <div class="stats-grid" id="runtimeStats">
+            <div class="stat-card"><span>Сервис</span><strong>...</strong></div>
+            <div class="stat-card"><span>Enabled</span><strong>...</strong></div>
+            <div class="stat-card"><span>Активные</span><strong>...</strong></div>
+            <div class="stat-card"><span>Оплачено</span><strong>...</strong></div>
+        </div>
+        <div class="actions">
+            <button class="button" data-runtime-action="start" type="button">Start</button>
+            <button class="button ghost" data-runtime-action="restart" type="button">Restart</button>
+            <button class="button ghost" data-runtime-action="stop" type="button">Stop</button>
+            <button class="button ghost" data-runtime-action="status" type="button">Status</button>
+        </div>
+        <pre class="result" id="runtimeResult"></pre>
     </section>
 
     <section class="panel split">
@@ -32,7 +56,7 @@
             <label>Reflector
                 <input name="reflector_name" placeholder="XLX138">
             </label>
-            <label>Домен
+            <label>Домен или IP
                 <input name="server_host" placeholder="xlx.example.com">
             </label>
             <label>Позывной sysop
@@ -93,10 +117,7 @@
         </div>
 
         <div class="file-tabs" id="fileTabs"></div>
-
-        <div class="file-meta" id="fileMeta">
-            <span>Файл не выбран</span>
-        </div>
+        <div class="file-meta" id="fileMeta"><span>Файл не выбран</span></div>
 
         <label class="editor-label">Содержимое файла
             <textarea id="fileEditor" spellcheck="false" placeholder="Загрузите файл для редактирования"></textarea>

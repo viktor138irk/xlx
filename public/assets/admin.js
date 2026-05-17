@@ -5,6 +5,9 @@ const adminResult = document.querySelector('#adminResult');
 const loadButton = document.querySelector('#loadSettings');
 const saveButton = document.querySelector('#saveSettings');
 const applyButton = document.querySelector('#applySettings');
+const loadRuntimeButton = document.querySelector('#loadRuntime');
+const runtimeStats = document.querySelector('#runtimeStats');
+const runtimeResult = document.querySelector('#runtimeResult');
 const loadConfigFilesButton = document.querySelector('#loadConfigFiles');
 const saveConfigFileButton = document.querySelector('#saveConfigFile');
 const reloadConfigFileButton = document.querySelector('#reloadConfigFile');
@@ -37,7 +40,7 @@ function fillForm(settings) {
 }
 
 async function loadSettings() {
-    setResult('Загружаем...');
+    setResult('Загружаем настройки...');
     const response = await fetch('/api/admin/xlxd/settings', {
         headers: { 'X-Admin-Token': token() },
     });
@@ -53,7 +56,7 @@ async function loadSettings() {
 }
 
 async function saveSettings(apply) {
-    setResult(apply ? 'Сохраняем и применяем...' : 'Сохраняем...');
+    setResult(apply ? 'Сохраняем и применяем env...' : 'Сохраняем...');
     const response = await fetch('/api/admin/xlxd/settings', {
         method: 'POST',
         headers: {
@@ -72,9 +75,64 @@ async function saveSettings(apply) {
     setResult(payload.data.message);
 }
 
-loadButton?.addEventListener('click', loadSettings);
-saveButton?.addEventListener('click', () => saveSettings(false));
-applyButton?.addEventListener('click', () => saveSettings(true));
+function renderRuntime(data) {
+    const service = data.service || {};
+    const counters = data.counters || {};
+    runtimeStats.innerHTML = `
+        <div class="stat-card"><span>Сервис</span><strong>${service.active || 'unknown'}</strong></div>
+        <div class="stat-card"><span>Enabled</span><strong>${service.enabled || 'unknown'}</strong></div>
+        <div class="stat-card"><span>Активные</span><strong>${counters.users_active ?? 0}</strong></div>
+        <div class="stat-card"><span>Оплачено</span><strong>${counters.payments_paid ?? 0}</strong></div>
+    `;
+
+    const events = data.latest_events || [];
+    runtimeResult.textContent = [
+        `service: ${service.service_name || 'xlxd'}`,
+        `active: ${service.active || 'unknown'}`,
+        `enabled: ${service.enabled || 'unknown'}`,
+        `log: ${service.log_path || ''}`,
+        '',
+        'Последние события:',
+        ...events.map((event) => event.message),
+    ].join('\n');
+}
+
+async function loadRuntime() {
+    runtimeResult.textContent = 'Загружаем runtime-статус...';
+    const response = await fetch('/api/admin/xlxd/runtime', {
+        headers: { 'X-Admin-Token': token() },
+    });
+    const payload = await response.json();
+    if (!payload.ok) {
+        runtimeResult.textContent = payload.error || 'Ошибка загрузки статуса';
+        return;
+    }
+    renderRuntime(payload.data);
+}
+
+async function runRuntimeAction(action) {
+    runtimeResult.textContent = `Выполняем ${action}...`;
+    const response = await fetch('/api/admin/xlxd/runtime', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Token': token(),
+        },
+        body: JSON.stringify({ action }),
+    });
+    const payload = await response.json();
+    if (!payload.ok) {
+        runtimeResult.textContent = payload.error || `Ошибка ${action}`;
+        return;
+    }
+
+    await loadRuntime();
+    runtimeResult.textContent = [
+        `action: ${payload.data.action}`,
+        `exit_code: ${payload.data.exit_code}`,
+        payload.data.output || 'ok',
+    ].join('\n');
+}
 
 function selectedFile() {
     return configFiles.find((file) => file.key === selectedFileKey) || null;
@@ -165,6 +223,13 @@ async function saveConfigFile() {
     setFileResult(`${payload.data.filename} сохранен.`);
 }
 
+loadButton?.addEventListener('click', loadSettings);
+saveButton?.addEventListener('click', () => saveSettings(false));
+applyButton?.addEventListener('click', () => saveSettings(true));
+loadRuntimeButton?.addEventListener('click', loadRuntime);
+document.querySelectorAll('[data-runtime-action]').forEach((button) => {
+    button.addEventListener('click', () => runRuntimeAction(button.dataset.runtimeAction));
+});
 loadConfigFilesButton?.addEventListener('click', loadConfigFiles);
 saveConfigFileButton?.addEventListener('click', saveConfigFile);
 reloadConfigFileButton?.addEventListener('click', () => {
