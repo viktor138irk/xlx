@@ -176,8 +176,23 @@ a2dissite 000-default.conf >/dev/null 2>&1 || true
 a2ensite xlx-panel.conf
 systemctl restart apache2
 
+echo "Building and installing xlxd reflector. This can take a few minutes..."
 bash "$REPO_ROOT/scripts/install-xlxd.sh"
-systemctl start xlxd || true
+
+XLXD_START_STATUS="not started"
+if command -v timeout >/dev/null 2>&1; then
+  if timeout 20s systemctl start xlxd; then
+    XLXD_START_STATUS="started"
+  else
+    XLXD_START_STATUS="start failed or timed out; run: sudo systemctl status xlxd --no-pager"
+  fi
+else
+  if systemctl start xlxd; then
+    XLXD_START_STATUS="started"
+  else
+    XLXD_START_STATUS="start failed; run: sudo systemctl status xlxd --no-pager"
+  fi
+fi
 
 cat <<EOF
 
@@ -194,6 +209,9 @@ Admin token:
 
 YooKassa webhook:
   ${BASE_URL}/api/webhooks/yookassa?token=${WEBHOOK_SECRET}
+
+XLX reflector:
+  ${XLXD_START_STATUS}
 
 Database:
   name=${DB_NAME}
