@@ -40,6 +40,8 @@ cd xlx
 sudo bash scripts/install-system.sh
 ```
 
+Web-панель устанавливается в `/opt/xlx-server`, поэтому Apache не зависит от папки, где был выполнен `git clone`.
+
 Установщик сам выберет адрес сервера:
 
 1. `XLX_PUBLIC_HOST`, если переменная задана;

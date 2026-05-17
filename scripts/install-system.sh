@@ -6,7 +6,25 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SOURCE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+APP_DIR="${XLX_APP_DIR:-/opt/xlx-server}"
+
+install_app_files() {
+  local source_real target_real
+  mkdir -p "$APP_DIR"
+  source_real="$(realpath "$SOURCE_ROOT")"
+  target_real="$(realpath "$APP_DIR")"
+
+  if [[ "$source_real" != "$target_real" ]]; then
+    tar --exclude='.git' -C "$SOURCE_ROOT" -cf - . | tar -C "$APP_DIR" -xf -
+  fi
+
+  chown -R root:www-data "$APP_DIR"
+  find "$APP_DIR" -type d -exec chmod 755 {} \;
+  find "$APP_DIR" -type f -exec chmod 644 {} \;
+}
+
+REPO_ROOT="$SOURCE_ROOT"
 PUBLIC_DIR="$REPO_ROOT/public"
 
 detect_host() {
@@ -88,9 +106,14 @@ DB_PASSWORD_SQL="$(sql_escape "$DB_PASSWORD")"
 
 echo "Installing XLX system for host: $PUBLIC_HOST"
 echo "Panel port: $PANEL_PORT"
+echo "Application directory: $APP_DIR"
 
 apt-get update
 apt-get install -y apache2 libapache2-mod-php php php-mysql mariadb-server git ca-certificates curl
+
+install_app_files
+REPO_ROOT="$APP_DIR"
+PUBLIC_DIR="$REPO_ROOT/public"
 
 systemctl enable --now mariadb
 

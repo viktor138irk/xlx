@@ -11,6 +11,8 @@
 - systemd service для reflector;
 - `/etc/xlx/xlxd.env`.
 
+Web-приложение копируется в `/opt/xlx-server`, чтобы Apache не зависел от того, где был сделан `git clone`. Это важно, если репозиторий лежит в `/root`: Apache не может читать такие родительские каталоги и отвечает `403 Forbidden`.
+
 ## Без домена
 
 На чистом Ubuntu/Debian сервере:
@@ -19,6 +21,12 @@
 git clone https://github.com/viktor138irk/xlx.git
 cd xlx
 sudo bash scripts/install-system.sh
+```
+
+Если нужен другой путь установки web-приложения:
+
+```bash
+sudo XLX_APP_DIR=/srv/xlx-server bash scripts/install-system.sh
 ```
 
 Установщик сам выберет адрес:
