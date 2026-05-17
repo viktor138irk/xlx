@@ -28,6 +28,12 @@ sudo bash scripts/install-system.sh
 3. первый IP из `hostname -I`;
 4. `127.0.0.1` как последний fallback.
 
+Если порт `80` уже занят другим сервисом, панель автоматически будет поставлена на `8088`. Порт можно задать вручную:
+
+```bash
+sudo XLX_PANEL_PORT=8090 bash scripts/install-system.sh
+```
+
 В конце он покажет:
 
 - URL сайта;

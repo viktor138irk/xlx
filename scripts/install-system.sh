@@ -32,6 +32,27 @@ detect_host() {
   echo "127.0.0.1"
 }
 
+port_is_busy() {
+  local port="$1"
+  ss -ltnH "sport = :${port}" 2>/dev/null | grep -q .
+}
+
+detect_panel_port() {
+  if [[ -n "${XLX_PANEL_PORT:-}" ]]; then
+    echo "$XLX_PANEL_PORT"
+    return
+  fi
+
+  for port in 80 8088 8090 8091; do
+    if ! port_is_busy "$port"; then
+      echo "$port"
+      return
+    fi
+  done
+
+  echo "8099"
+}
+
 random_token() {
   local token
   token="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c "${1:-40}" || true)"
@@ -48,7 +69,12 @@ sql_escape() {
 
 PUBLIC_HOST="$(detect_host)"
 PUBLIC_SCHEME="${XLX_PUBLIC_SCHEME:-http}"
-BASE_URL="${XLX_BASE_URL:-${PUBLIC_SCHEME}://${PUBLIC_HOST}}"
+PANEL_PORT="$(detect_panel_port)"
+if [[ "$PANEL_PORT" == "80" || "$PANEL_PORT" == "443" ]]; then
+  BASE_URL="${XLX_BASE_URL:-${PUBLIC_SCHEME}://${PUBLIC_HOST}}"
+else
+  BASE_URL="${XLX_BASE_URL:-${PUBLIC_SCHEME}://${PUBLIC_HOST}:${PANEL_PORT}}"
+fi
 REFLECTOR_NAME="${XLX_REFLECTOR_NAME:-XLX000}"
 SYSOP_CALLSIGN="${XLX_SYSOP_CALLSIGN:-N0CALL}"
 SYSOP_EMAIL="${XLX_SYSOP_EMAIL:-admin@${PUBLIC_HOST%%:*}}"
@@ -61,6 +87,7 @@ WEBHOOK_SECRET="${YOOKASSA_WEBHOOK_SECRET:-$(random_token 48)}"
 DB_PASSWORD_SQL="$(sql_escape "$DB_PASSWORD")"
 
 echo "Installing XLX system for host: $PUBLIC_HOST"
+echo "Panel port: $PANEL_PORT"
 
 apt-get update
 apt-get install -y apache2 libapache2-mod-php php php-mysql mariadb-server git ca-certificates curl
@@ -109,6 +136,7 @@ putenv('XLX_SYSOP_CALLSIGN=${PHP_SYSOP_CALLSIGN}');
 putenv('XLX_SYSOP_EMAIL=${PHP_SYSOP_EMAIL}');
 putenv('XLX_COUNTRY=${PHP_COUNTRY}');
 putenv('XLX_ADMIN_TOKEN=${PHP_ADMIN_TOKEN}');
+putenv('XLX_PANEL_PORT=${PANEL_PORT}');
 putenv('YOOKASSA_SHOP_ID=${PHP_YOOKASSA_SHOP_ID}');
 putenv('YOOKASSA_SECRET_KEY=${PHP_YOOKASSA_SECRET_KEY}');
 putenv('YOOKASSA_RETURN_URL=${PHP_YOOKASSA_RETURN_URL}');
@@ -136,10 +164,17 @@ XLX_SERVICE_NAME=xlxd
 XLX_REPO_URL=https://github.com/LX3JL/xlxd.git
 EOF
 
-sed "s#__PUBLIC_DIR__#${PUBLIC_DIR}#g" "$REPO_ROOT/deploy/apache/xlx-panel.conf" > /etc/apache2/sites-available/xlx-panel.conf
+cat > /etc/apache2/ports.conf <<EOF
+Listen ${PANEL_PORT}
+EOF
+
+sed \
+  -e "s#__PUBLIC_DIR__#${PUBLIC_DIR}#g" \
+  -e "s#__PANEL_PORT__#${PANEL_PORT}#g" \
+  "$REPO_ROOT/deploy/apache/xlx-panel.conf" > /etc/apache2/sites-available/xlx-panel.conf
 a2dissite 000-default.conf >/dev/null 2>&1 || true
 a2ensite xlx-panel.conf
-systemctl reload apache2
+systemctl restart apache2
 
 bash "$REPO_ROOT/scripts/install-xlxd.sh"
 systemctl start xlxd || true

@@ -14,6 +14,7 @@ return [
         'debug' => (bool) (getenv('XLX_DEBUG') ?: false),
         'base_url' => $baseUrl,
         'timezone' => getenv('XLX_TIMEZONE') ?: 'Europe/Moscow',
+        'panel_port' => (int) (getenv('XLX_PANEL_PORT') ?: 80),
     ],
 
     'database' => [
