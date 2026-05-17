@@ -52,11 +52,27 @@ install -m 0755 "$REPO_ROOT/scripts/xlx-control" /usr/local/sbin/xlx-control
 install -m 0644 "$REPO_ROOT/deploy/systemd/xlxd.service" "/etc/systemd/system/${XLX_SERVICE_NAME}.service"
 
 /usr/local/sbin/xlx-control render-modules
+
+if getent group www-data >/dev/null 2>&1; then
+  chgrp www-data "$XLX_INSTALL_PATH" || true
+  chmod 775 "$XLX_INSTALL_PATH" || true
+  for file in xlxd.blacklist xlxd.whitelist xlxd.interlink xlxd.terminal; do
+    if [[ -f "$XLX_INSTALL_PATH/$file" ]]; then
+      chgrp www-data "$XLX_INSTALL_PATH/$file" || true
+      chmod 664 "$XLX_INSTALL_PATH/$file" || true
+    fi
+  done
+fi
+
 systemctl daemon-reload
 systemctl enable "${XLX_SERVICE_NAME}.service"
 
 cat <<EOF
 XLX reflector installed.
+
+This script installs only the xlxd reflector.
+For the full system with web panel, admin dashboard, YooKassa and config editor, run:
+  sudo bash scripts/install-system.sh
 
 Next commands:
   sudo systemctl start ${XLX_SERVICE_NAME}

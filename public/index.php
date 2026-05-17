@@ -7,6 +7,7 @@ use Xlx\Domain\AccessExportService;
 use Xlx\Domain\IdAllocator;
 use Xlx\Domain\PaymentService;
 use Xlx\Domain\RegistrationService;
+use Xlx\Domain\XlxdConfigFileService;
 use Xlx\Domain\XlxdSettingsService;
 use Xlx\Domain\YooKassaClient;
 use Xlx\Support\Database;
@@ -115,6 +116,18 @@ try {
         $input = Input::json();
         $service = new XlxdSettingsService($config);
         Response::json(['ok' => true, 'data' => $service->save($pdo, $input['settings'] ?? [], (bool) ($input['apply'] ?? false))]);
+    }
+
+    if ($method === 'GET' && $path === '/api/admin/xlxd/config-files') {
+        Security::requireAdminToken($config);
+        Response::json(['ok' => true, 'data' => (new XlxdConfigFileService($config))->list()]);
+    }
+
+    if ($method === 'POST' && $path === '/api/admin/xlxd/config-files') {
+        Security::requireAdminToken($config);
+        $input = Input::json();
+        $service = new XlxdConfigFileService($config);
+        Response::json(['ok' => true, 'data' => $service->save((string) ($input['file'] ?? ''), (string) ($input['content'] ?? ''))]);
     }
 
     Response::error('Route not found.', 404);

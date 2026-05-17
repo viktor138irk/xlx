@@ -13,6 +13,7 @@
 - установка и управление `xlxd`;
 - главный пользовательский дашборд `/`;
 - админка настроек `xlxd` `/admin`;
+- графический редактор `/xlxd/xlxd.blacklist`, `xlxd.whitelist`, `xlxd.interlink`, `xlxd.terminal`;
 - экспорт активных пользователей для будущего access gateway.
 
 ## Компоненты

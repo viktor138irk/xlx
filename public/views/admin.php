@@ -81,6 +81,33 @@
             <pre class="result" id="adminResult"></pre>
         </div>
     </section>
+
+    <section class="panel config-editor">
+        <div class="config-editor-head">
+            <div>
+                <p class="eyebrow">Файлы XLX</p>
+                <h2>Редактор blacklist, whitelist, interlink и terminal</h2>
+                <p class="muted-text">Изменения сохраняются прямо в `/xlxd`. После правки перезапусти `xlxd`, если файл требует перечитывания сервисом.</p>
+            </div>
+            <button class="button ghost" id="loadConfigFiles" type="button">Загрузить файлы</button>
+        </div>
+
+        <div class="file-tabs" id="fileTabs"></div>
+
+        <div class="file-meta" id="fileMeta">
+            <span>Файл не выбран</span>
+        </div>
+
+        <label class="editor-label">Содержимое файла
+            <textarea id="fileEditor" spellcheck="false" placeholder="Загрузите файл для редактирования"></textarea>
+        </label>
+
+        <div class="actions">
+            <button class="button" id="saveConfigFile" type="button">Сохранить файл</button>
+            <button class="button ghost" id="reloadConfigFile" type="button">Отменить изменения</button>
+        </div>
+        <pre class="result" id="fileResult"></pre>
+    </section>
 </main>
 <script src="/assets/admin.js"></script>
 </body>
